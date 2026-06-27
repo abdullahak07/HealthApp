@@ -14,8 +14,8 @@ function dailyTarget(profile = {}) {
   const height = Number(profile.heightCm) || 0;
   const age = Number(profile.age) || 0;
   const sexOffset = profile.sex === "female" ? -161 : profile.sex === "male" ? 5 : -78;
-  const factors = { sedentary: 1.2, light: 1.375, moderate: 1.55, very_active: 1.725, athlete: 1.9 };
-  const adjustments = { lose_weight: -500, recomposition: -350, build_muscle: 250, maintain: 0 };
+  const factors = { sedentary: 1.2, light: 1.375, moderate: 1.465, very_active: 1.725, athlete: 1.9 };
+  const adjustments = { lose_weight: -500, recomposition: -250, build_muscle: 250, maintain: 0 };
   const bmr = 10 * weight + 6.25 * height - 5 * age + sexOffset;
   return Math.max(1200, Math.round(bmr * (factors[profile.activity] || 1.2) + (adjustments[profile.goal] ?? 0)));
 }
