@@ -1,12 +1,12 @@
 export const defaultProfile = {
   name: "Abdullah",
-  age: 30,
+  age: 31,
   sex: "male",
   heightCm: 188,
-  weightKg: 95,
+  weightKg: 97,
   targetWeightKg: 86,
   goal: "recomposition",
-  activity: "very_active",
+  activity: "moderate",
   weeklyTrainingDays: 5,
   workoutMinutes: 65,
   equipment: "Full commercial gym",
@@ -16,15 +16,15 @@ export const defaultProfile = {
 
 export const activityMultipliers = {
   sedentary: { label: "Mostly sedentary", factor: 1.2 },
-  light: { label: "Lightly active", factor: 1.375 },
-  moderate: { label: "Moderately active", factor: 1.55 },
-  very_active: { label: "Very active", factor: 1.725 },
-  athlete: { label: "Highly active", factor: 1.9 },
+  light: { label: "Light exercise 1–3 times/week", factor: 1.375 },
+  moderate: { label: "Moderate exercise 4–5 times/week", factor: 1.465 },
+  very_active: { label: "Daily or intense exercise 3–4 times/week", factor: 1.725 },
+  athlete: { label: "Very intense exercise or physical job", factor: 1.9 },
 };
 
 export const goalSettings = {
-  lose_weight: { label: "Lose weight", adjustment: -500 },
-  recomposition: { label: "Lose fat + build muscle", adjustment: -350 },
+  lose_weight: { label: "Weight loss — about 0.5 kg/week", adjustment: -500 },
+  recomposition: { label: "Mild fat loss + muscle retention", adjustment: -250 },
   build_muscle: { label: "Build muscle", adjustment: 250 },
   maintain: { label: "Maintain weight", adjustment: 0 },
 };
