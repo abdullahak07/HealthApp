@@ -9,7 +9,7 @@ function readState(raw = localStorage.getItem(STORAGE_KEY)) {
   catch { return null; }
 }
 
-function targets(profile = {}) {
+function dailyTarget(profile = {}) {
   const weight = Number(profile.weightKg) || 0;
   const height = Number(profile.heightCm) || 0;
   const age = Number(profile.age) || 0;
@@ -20,12 +20,12 @@ function targets(profile = {}) {
   return Math.max(1200, Math.round(bmr * (factors[profile.activity] || 1.2) + (adjustments[profile.goal] ?? 0)));
 }
 
-function consumed(app) {
-  const planned = (app.meals || []).flatMap((meal) => (meal.items || []).filter((item) => app.mealChecks?.[item.id]));
-  const extras = app.extraFoods || [];
-  const calories = [...planned, ...extras].reduce((sum, item) => sum + Number(item.calories || 0), 0);
-  const extraCalories = extras.reduce((sum, item) => sum + Number(item.calories || 0), 0);
-  return { calories, extraCalories };
+function consumedCalories(app) {
+  const planned = (app.meals || []).flatMap((meal) =>
+    (meal.items || []).filter((item) => app.mealChecks?.[item.id]),
+  );
+  return [...planned, ...(app.extraFoods || [])]
+    .reduce((sum, item) => sum + Number(item.calories || 0), 0);
 }
 
 function burnMinutes(calories, weightKg, met) {
@@ -37,7 +37,7 @@ function burnMinutes(calories, weightKg, met) {
 function equivalents(calories, weightKg) {
   const walkMinutes = burnMinutes(calories, weightKg, 4.8);
   return [
-    { label: "Brisk walk", icon: Footprints, minutes: walkMinutes, detail: `about ${Math.round(walkMinutes * 100 / 100) * 1000 / 10}k steps`, steps: walkMinutes * 100 },
+    { label: "Brisk walk", icon: Footprints, minutes: walkMinutes, detail: `≈ ${Math.round(walkMinutes * 110).toLocaleString()} steps` },
     { label: "Incline treadmill", icon: Route, minutes: burnMinutes(calories, weightKg, 6.0), detail: "moderate incline" },
     { label: "Moderate cycling", icon: Bike, minutes: burnMinutes(calories, weightKg, 6.8), detail: "steady effort" },
     { label: "Easy jogging", icon: PersonStanding, minutes: burnMinutes(calories, weightKg, 7.0), detail: "only if appropriate" },
@@ -46,57 +46,60 @@ function equivalents(calories, weightKg) {
 
 function OffsetCard({ app }) {
   const data = useMemo(() => {
-    const target = targets(app.profile);
-    const intake = consumed(app);
-    const netOver = Math.max(0, intake.calories - target);
-    const remaining = Math.max(0, target - intake.calories);
+    const target = dailyTarget(app.profile);
+    const consumed = consumedCalories(app);
+    const balance = consumed - target;
+    const netOver = Math.max(0, balance);
+    const remaining = Math.max(0, -balance);
     const weight = Number(app.profile?.weightKg) || 70;
     return {
       target,
-      ...intake,
+      consumed,
       netOver,
       remaining,
       weight,
-      balanceActivities: equivalents(netOver, weight),
-      extraActivities: equivalents(intake.extraCalories, weight),
+      activities: equivalents(netOver, weight),
     };
   }, [app]);
-
-  const burnTarget = data.netOver > 0 ? data.netOver : data.extraCalories;
-  const activities = data.netOver > 0 ? data.balanceActivities : data.extraActivities;
-  const mode = data.netOver > 0 ? "NET OVER TARGET" : "EXTRA-FOOD EQUIVALENT";
 
   return (
     <section className="offset-card">
       <div className="offset-header">
-        <div><span className="offset-kicker">CALORIE BALANCE</span><h3>Activity needed to balance it</h3></div>
+        <div><span className="offset-kicker">CALORIE BALANCE</span><h3>Activity needed to balance the day</h3></div>
         <div className={`offset-balance ${data.netOver > 0 ? "over" : "under"}`}>
           <Gauge size={18} />
-          <div><strong>{data.netOver > 0 ? `${data.netOver} kcal over` : `${data.remaining} kcal remaining`}</strong><span>daily target balance</span></div>
+          <div>
+            <strong>{data.netOver > 0 ? `${data.netOver} kcal over` : `${data.remaining} kcal remaining`}</strong>
+            <span>net daily balance</span>
+          </div>
         </div>
       </div>
 
-      {data.extraCalories > 0 ? <>
+      {data.netOver > 0 ? <>
         <div className="offset-explanation">
-          <strong>{mode}: {burnTarget} kcal</strong>
-          <p>{data.netOver > 0
-            ? `You are ${data.netOver} kcal above your full-day target. These options estimate the activity needed to offset that net amount.`
-            : `You logged ${data.extraCalories} kcal as extra food, but your full day is still ${data.remaining} kcal below target. No activity is required for daily balance; the options below show the equivalent of the extras only.`}</p>
+          <strong>NET SURPLUS TO OFFSET: {data.netOver} kcal</strong>
+          <p>Your total logged intake is {data.netOver} kcal above your daily target. The options below estimate the activity required to offset only that net surplus.</p>
         </div>
 
         <div className="offset-activity-grid">
-          {activities.map(({ label, icon: Icon, minutes, detail, steps }) => <div key={label}>
+          {data.activities.map(({ label, icon: Icon, minutes, detail }) => <div key={label}>
             <span className="offset-activity-icon"><Icon size={20} /></span>
-            <span><small>{label}</small><strong>{minutes} min</strong><em>{steps ? `≈ ${Math.round(steps).toLocaleString()} steps` : detail}</em></span>
+            <span><small>{label}</small><strong>{minutes} min</strong><em>{detail}</em></span>
           </div>)}
         </div>
-      </> : <div className="offset-empty"><Dumbbell size={25} /><div><strong>No extra food logged</strong><span>Add an extra food to see its walking, steps, cycling and jogging equivalents.</span></div></div>}
+      </> : <div className="offset-empty">
+        <Dumbbell size={25} />
+        <div>
+          <strong>No balancing activity required</strong>
+          <span>You are still {data.remaining} kcal below your daily target. Extra foods are already included in that total, so the correct offset is 0 kcal.</span>
+        </div>
+      </div>}
 
       <div className="offset-method">
         <TimerReset size={16} />
-        <span>Calculated from your saved weight ({data.weight} kg) using standard MET energy-cost estimates. Real burn can differ by pace, fitness, terrain, heart rate and device accuracy.</span>
+        <span>When a surplus exists, activity time is estimated from your saved weight ({data.weight} kg) using the MET equation: kcal/min = MET × 3.5 × body weight ÷ 200.</span>
       </div>
-      <div className="offset-warning"><CircleAlert size={15} /> These are activity equivalents, not guarantees. Stop for pain, dizziness, chest symptoms or unusual breathlessness.</div>
+      <div className="offset-warning"><CircleAlert size={15} /> Exercise burn and food intake cannot be measured exactly from steps alone. These are estimates, not guarantees.</div>
     </section>
   );
 }
