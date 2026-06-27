@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Activity, ArrowRight, Beef, CircleAlert, Dumbbell, Flame } from "lucide-react";
 
 const STORAGE_KEY = "healthai-mvp-v1";
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-function readState() {
+function readState(raw = localStorage.getItem(STORAGE_KEY)) {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+    return JSON.parse(raw || "null");
   } catch {
     return null;
   }
@@ -42,7 +42,8 @@ function totals(app) {
 function tomorrowWorkout(app) {
   const tomorrowName = DAY_NAMES[(new Date().getDay() + 1) % 7];
   const routine = app.routine || [];
-  const workout = routine.find((day) => String(day.day).toLowerCase() === tomorrowName.toLowerCase()) || routine[(new Date().getDay()) % Math.max(routine.length, 1)];
+  const workout = routine.find((day) => String(day.day).toLowerCase() === tomorrowName.toLowerCase())
+    || routine[new Date().getDay() % Math.max(routine.length, 1)];
   return { name: tomorrowName, workout };
 }
 
@@ -70,7 +71,6 @@ function buildGuidance(app) {
       : `${Math.abs(calorieDifference)} kcal below today’s target`;
     gymAction = "Follow the normal session exactly as planned.";
     adjustment = "This difference is small; no special correction is needed tomorrow.";
-    tone = "steady";
   } else if (calorieDifference <= 500) {
     headline = `${calorieDifference} kcal above today’s target`;
     gymAction = "Keep the planned strength workout. Add only 10–20 minutes of easy walking or low-intensity cardio if you feel recovered.";
@@ -89,18 +89,7 @@ function buildGuidance(app) {
   if (consumed.carbs < target.carbs * 0.55 && !workout?.rest) nutritionActions.push("Carbohydrate intake is relatively low: include a normal carb serving before or after training.");
   if (!nutritionActions.length) nutritionActions.push("Your macro balance does not require a special change tomorrow.");
 
-  return {
-    target,
-    consumed,
-    calorieDifference,
-    tomorrowName,
-    workout,
-    headline,
-    gymAction,
-    adjustment,
-    nutritionActions,
-    tone,
-  };
+  return { tomorrowName, workout, headline, gymAction, adjustment, nutritionActions, tone };
 }
 
 function GuidanceCard({ app }) {
@@ -139,13 +128,15 @@ function GuidanceCard({ app }) {
         {guidance.nutritionActions.map((item) => <p key={item}><ArrowRight size={14} /> {item}</p>)}
       </div>
 
-      <div className="adaptive-next-safety"><CircleAlert size={15} /> Extra food should not be “punished” with extreme exercise. The recommendation uses estimated food values and should be adjusted for recovery, pain and medical advice.</div>
+      <div className="adaptive-next-safety"><CircleAlert size={15} /> Extra food should not be “punished” with extreme exercise. Recommendations use estimated food values and should be adjusted for recovery, pain and medical advice.</div>
     </section>
   );
 }
 
 export default function AdaptiveNutritionCoach() {
-  const [app, setApp] = useState(readState);
+  const initialRaw = localStorage.getItem(STORAGE_KEY) || "";
+  const lastRaw = useRef(initialRaw);
+  const [app, setApp] = useState(() => readState(initialRaw));
   const [slot, setSlot] = useState(null);
 
   useEffect(() => {
@@ -160,13 +151,17 @@ export default function AdaptiveNutritionCoach() {
           target.id = "adaptive-nutrition-coach-slot";
           summary.insertAdjacentElement("afterend", target);
         }
-        setSlot(target);
+        setSlot((current) => current === target ? current : target);
       } else {
         target?.remove();
-        setSlot(null);
+        setSlot((current) => current ? null : current);
       }
 
-      setApp(readState());
+      const raw = localStorage.getItem(STORAGE_KEY) || "";
+      if (raw !== lastRaw.current) {
+        lastRaw.current = raw;
+        setApp(readState(raw));
+      }
     };
 
     refresh();
