@@ -1,0 +1,45 @@
+================================================
+HealthApp npm repair
+================================================
+
+[1/5] Setting the official public npm registry...
+
+[2/5] Removing the lockfile containing the internal URL...
+
+[3/5] Checking registry...
+Registry: https://registry.npmjs.org/
+
+[4/5] Installing dependencies and creating a clean lockfile...
+
+added 64 packages, and audited 65 packages in 18s
+
+7 packages are looking for funding
+  run `npm fund` for details
+
+2 vulnerabilities (1 moderate, 1 high)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+[5/5] Running production build...
+
+> healthapp@0.1.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 1582 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.55 kB │ gzip:  0.33 kB
+dist/assets/index-7LAR6p9H.css   23.47 kB │ gzip:  5.70 kB
+dist/assets/index-DmyyQdK_.js   195.61 kB │ gzip: 60.35 kB
+✓ built in 1.80s
+Build completed successfully.
+
+================================================
+OVERALL RESULT: PASS
+Report saved to: /home/drhorseman/Downloads/HealthApp/npm-fix-report.txt
+================================================
