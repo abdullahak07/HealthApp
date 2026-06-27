@@ -1,0 +1,190 @@
+#adaptive-nutrition-coach-slot {
+  margin-top: 18px;
+}
+
+.adaptive-next-card {
+  border: 1px solid rgba(184, 243, 107, .18);
+  border-radius: 20px;
+  padding: 22px;
+  background: linear-gradient(145deg, rgba(184,243,107,.07), rgba(13,18,32,.95));
+}
+
+.adaptive-next-card.tone-watch {
+  border-color: rgba(255, 138, 76, .28);
+  background: linear-gradient(145deg, rgba(255,138,76,.07), rgba(13,18,32,.95));
+}
+
+.adaptive-next-header,
+.adaptive-next-grid,
+.adaptive-next-workout,
+.adaptive-next-score,
+.adaptive-next-action > span,
+.adaptive-next-nutrition > span,
+.adaptive-next-nutrition p,
+.adaptive-next-safety {
+  display: flex;
+  align-items: center;
+}
+
+.adaptive-next-header {
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.adaptive-next-kicker {
+  color: var(--lime);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+}
+
+.adaptive-next-card.tone-watch .adaptive-next-kicker {
+  color: var(--orange);
+}
+
+.adaptive-next-header h3 {
+  margin: 5px 0 0;
+  font: 800 20px/1.2 "Manrope", sans-serif;
+}
+
+.adaptive-next-score {
+  gap: 7px;
+  flex: none;
+  padding: 9px 11px;
+  border-radius: 11px;
+  color: var(--lime);
+  background: rgba(184,243,107,.08);
+  font-size: 11px;
+}
+
+.adaptive-next-card.tone-watch .adaptive-next-score {
+  color: var(--orange);
+  background: rgba(255,138,76,.08);
+}
+
+.adaptive-next-grid {
+  align-items: stretch;
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.adaptive-next-workout,
+.adaptive-next-action,
+.adaptive-next-nutrition {
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 14px;
+  background: rgba(5,9,18,.36);
+}
+
+.adaptive-next-workout {
+  gap: 12px;
+  padding: 16px;
+}
+
+.adaptive-next-icon {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  color: var(--lime);
+  background: rgba(184,243,107,.10);
+}
+
+.adaptive-next-workout > div:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.adaptive-next-workout small,
+.adaptive-next-action > span,
+.adaptive-next-nutrition > span {
+  color: #71809a;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .8px;
+}
+
+.adaptive-next-workout strong {
+  font: 800 15px/1.2 "Manrope", sans-serif;
+}
+
+.adaptive-next-workout span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.adaptive-next-action,
+.adaptive-next-nutrition {
+  padding: 15px 16px;
+}
+
+.adaptive-next-action > span,
+.adaptive-next-nutrition > span {
+  gap: 6px;
+  color: var(--lime);
+}
+
+.adaptive-next-card.tone-watch .adaptive-next-action > span {
+  color: var(--orange);
+}
+
+.adaptive-next-action p {
+  margin: 10px 0 6px;
+  color: #e6ecfa;
+  font-size: 12px;
+  line-height: 1.55;
+  font-weight: 700;
+}
+
+.adaptive-next-action small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.adaptive-next-nutrition {
+  margin-top: 12px;
+}
+
+.adaptive-next-nutrition p {
+  align-items: flex-start;
+  gap: 7px;
+  margin: 10px 0 0;
+  color: #bdc7dc;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.adaptive-next-nutrition p svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--lime);
+}
+
+.adaptive-next-safety {
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.025);
+  color: #77849d;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.adaptive-next-safety svg {
+  flex: none;
+}
+
+@media (max-width: 760px) {
+  .adaptive-next-card { padding: 17px; }
+  .adaptive-next-header { align-items: flex-start; flex-direction: column; }
+  .adaptive-next-score { width: 100%; }
+  .adaptive-next-grid { grid-template-columns: 1fr; }
+}
