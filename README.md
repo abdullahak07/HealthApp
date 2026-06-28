@@ -4,14 +4,14 @@
 
 ### Stop logging your whole life. **Just log what changed.**
 
-A routine-first nutrition and workout coach that remembers your normal meals, tracks deviations, and turns the result into one clear next action.
+A routine-first nutrition and workout coach that remembers normal meals, understands deviations with Gemini, and turns the result into one clear next action.
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-Open_HealthAI-B8F36B?style=for-the-badge&logo=github&logoColor=111827)](https://abdullahak07.github.io/HealthApp/)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vite.dev/)
-[![GitHub Pages](https://img.shields.io/badge/Deployed-GitHub_Pages-222222?style=for-the-badge&logo=githubpages&logoColor=white)](https://abdullahak07.github.io/HealthApp/)
+[![Gemini](https://img.shields.io/badge/Gemini-Structured_Food_Estimation-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white)](https://ai.google.dev/)
+[![Vercel](https://img.shields.io/badge/Deploy-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fabdullahak07%2FHealthApp&env=GEMINI_API_KEY,GEMINI_MODEL)
 
-**[Launch the app](https://abdullahak07.github.io/HealthApp/)** · **[View the source](https://github.com/abdullahak07/HealthApp)**
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fabdullahak07%2FHealthApp&env=GEMINI_API_KEY,GEMINI_MODEL)
 
 </div>
 
@@ -27,29 +27,19 @@ Most health apps make users rebuild every day from zero:
 - Review many charts without knowing what to do next
 - Treat one unusual meal as though the entire plan has failed
 
-For people who usually repeat the same meals and gym routine, this creates unnecessary work and poor adherence.
-
-## The HealthAI approach
-
-HealthAI starts with the user’s **normal routine already saved**.
-
-Daily use becomes:
-
-1. Tap the planned meals that were eaten.
-2. Add only what was different.
-3. Let the app calculate the updated daily balance.
-4. Receive a practical activity or nutrition adjustment when required.
+HealthAI starts from the user’s **normal routine** and asks only what changed.
 
 ```mermaid
 flowchart LR
     A[Normal meals and workouts saved] --> B[Confirm today's routine]
-    B --> C[Add only deviations]
-    C --> D[Food database and portion estimate]
-    D --> E[Net calorie and macro balance]
-    E --> F[Clear next action]
+    B --> C[Describe what changed]
+    C --> D[Gemini interprets meal and portion]
+    D --> E[Review estimate, range and assumptions]
+    E --> F[Update calorie and macro balance]
+    F --> G[Clear next action]
 ```
 
-> **Core product idea:** your normal routine is the baseline; HealthAI only asks you to report the exception.
+> **Core product idea:** your routine is the baseline; HealthAI only asks you to report the exception.
 
 ---
 
@@ -58,48 +48,69 @@ flowchart LR
 | Traditional calorie tracker | HealthAI |
 |---|---|
 | Log every meal from scratch | Confirm pre-filled normal meals |
-| Focus on individual food entries | Focus on deviation from the normal routine |
+| Search a food database manually | Describe the meal naturally |
+| Return one generic calorie number | Show an estimate, range, confidence and assumptions |
+| Focus on individual entries | Focus on deviation from the normal routine |
 | Show totals and charts | Explain what the totals mean next |
-| Treat every day independently | Designed to evolve toward weekly rebalancing |
-| Often presents one calorie number as exact | Shows the source and portion assumption for added foods |
-| Workout and nutrition live separately | Food balance and training guidance are connected |
+| Keep workouts and nutrition separate | Connect food balance with training guidance |
 
-### The intended market wedge
+### Intended market wedge
 
-HealthAI is being shaped around **real Australian, halal, South Asian and Middle Eastern eating patterns**, where meals are often homemade, shared, restaurant-served or measured by plate, bowl, roti or serving spoon rather than a nutrition label.
+HealthAI is being shaped around **Australian, halal, South Asian and Middle Eastern eating patterns**, where meals are often homemade, shared, restaurant-served or measured by plate, bowl, roti or serving spoon rather than a nutrition label.
 
-The longer-term goal is to support:
+The AI estimator is prompted to understand foods such as:
 
-- Halal-first food discovery
-- Australian supermarket and restaurant products
-- Biryani, roti, paratha, karahi, kebab, shawarma and similar meals
-- Household portion estimation
-- Ramadan-aware suhoor, iftar and workout planning
-- Weekly correction choices that protect protein and training performance
+- Biryani, pulao, curry, karahi and haleem
+- Roti, naan, paratha and Lebanese bread
+- Kebabs, shawarma and halal snack packs
+- Australian supermarket and restaurant meals
+- Mixed plates where oil, sauces and serving size create uncertainty
 
 ---
 
 ## Current MVP
 
-### Simple daily nutrition
+### Routine-first daily nutrition
 
 - Pre-filled normal meals
 - One-tap meal confirmation
-- Extra-food entry using natural text such as `pizza 1 slice` or `chicken 200 g`
-- Live food lookup through USDA FoodData Central
-- Barcode nutrition lookup through Open Food Facts
-- Local fallback estimates when live data is unavailable
+- Extra-food entry in natural language
+- Barcode lookup through Open Food Facts
 - Calories, protein, carbohydrates and fat tracking
-- Food source and assumed portion shown after lookup
+- Browser persistence through `localStorage`
+
+### Gemini food estimation
+
+The user can enter descriptions such as:
+
+```text
+pizza 1 slice
+one plate chicken biryani with raita
+2 rotis with chicken karahi
+large halal snack pack with garlic sauce
+```
+
+Gemini returns a structured preview containing:
+
+- Interpreted food and serving
+- Best calorie estimate
+- Plausible minimum and maximum
+- Protein, carbohydrates and fat
+- Confidence level
+- Assumptions affecting accuracy
+- Component breakdown for mixed meals
+- One clarification question when the entry is too ambiguous
+
+Nothing is added until the user reviews and confirms the estimate.
 
 ### Actionable calorie balance
 
 - Mifflin–St Jeor-based calorie targets
 - Goal-specific maintenance and weight-loss targets
 - Net daily surplus calculation
-- Weight-adjusted activity equivalents when the user is genuinely above target
+- Weight-adjusted activity equivalents only when intake is genuinely above target
 - Walking, estimated steps, incline treadmill, cycling and jogging options
-- No false “burn it off” recommendation when intake remains below the daily target
+- No false “burn it off” recommendation when the user remains below target
 
 ### Workout system
 
@@ -107,44 +118,157 @@ The longer-term goal is to support:
 - Daily exercise checklist
 - Sets, repetitions, rest periods, warm-ups and cooldowns
 - Workout duration and estimated session calories
-- Responsive workout view for desktop and mobile
+- Responsive desktop and mobile views
 
 ### Routine import
 
-- PDF workout-plan extraction in the browser
+- PDF workout extraction in the browser
 - Image OCR in the browser
 - TXT and JSON routine import
-- Imported workout days and exercises saved directly into the app
-- No workout PDF upload to an application backend in the current MVP
-
-### Progress and profile
-
-- Personal body and activity profile
-- BMI, BMR, calorie and macro estimates
-- Weight check-ins and trend view
-- Goal and activity-level controls
-- Browser persistence through `localStorage`
+- Imported workout days and exercises saved locally
 
 ---
 
-## Privacy-first MVP architecture
-
-HealthAI currently runs as a static client-side application.
-
-- No user account is required.
-- Profile, meals, routines and progress are stored in the browser.
-- Workout PDF parsing and image OCR run locally in the browser.
-- No private AI key is embedded in the public repository.
-- Clearing site data or changing browser/device removes local data unless export/sync is added later.
+## Architecture
 
 ```text
-Browser
-├── React interface
-├── Local profile and history
-├── PDF.js workout extraction
-├── Tesseract.js image OCR
-├── USDA food search
-└── Open Food Facts barcode lookup
+Vercel deployment
+├── React + Vite frontend
+├── /api/food/estimate.js       # Secure Gemini Vercel Function
+├── /api/health.js              # Deployment/configuration check
+├── Browser localStorage        # Profile, meals, routine and progress
+├── PDF.js                      # Local workout PDF extraction
+├── Tesseract.js                # Local image OCR
+└── Open Food Facts             # Barcode nutrition lookup
+```
+
+### API-key security
+
+`GEMINI_API_KEY` is read only inside the Vercel Function through `process.env`.
+
+It is **not**:
+
+- committed to GitHub
+- included in the Vite bundle
+- exposed through a `VITE_` variable
+- sent to the browser
+
+The frontend calls the same-origin endpoint:
+
+```text
+POST /api/food/estimate
+```
+
+---
+
+## Deploy on Vercel
+
+### Fastest method
+
+1. Click **Deploy with Vercel** above.
+2. Connect the `abdullahak07/HealthApp` repository.
+3. Add the required environment variable:
+
+```text
+GEMINI_API_KEY=your_private_gemini_key
+```
+
+4. Optionally set:
+
+```text
+GEMINI_MODEL=gemini-3.5-flash
+```
+
+5. Press **Deploy**.
+
+Vercel automatically detects the Vite frontend and the files under `/api` as serverless functions.
+
+### Verify the deployment
+
+Open:
+
+```text
+https://YOUR-VERCEL-DOMAIN/api/health
+```
+
+Expected response:
+
+```json
+{
+  "ok": true,
+  "service": "healthai-vercel-gemini",
+  "model": "gemini-3.5-flash",
+  "geminiConfigured": true
+}
+```
+
+Then open the app and confirm the food card shows:
+
+```text
+AI connected
+```
+
+---
+
+## Run locally with Vercel Functions
+
+### Requirements
+
+- Node.js 20 or newer
+- npm
+- Vercel CLI
+
+```bash
+npm install
+npm install --global vercel
+vercel dev
+```
+
+Create a local `.env` file from `.env.example`:
+
+```text
+GEMINI_API_KEY=your_private_gemini_key
+GEMINI_MODEL=gemini-3.5-flash
+```
+
+Do not commit `.env`.
+
+### Frontend-only development
+
+```bash
+npm install
+npm run dev
+```
+
+The interface will run, but native `/api` functions require `vercel dev`.
+
+### Production verification
+
+```bash
+npm run check
+```
+
+---
+
+## Project structure
+
+```text
+HealthApp/
+├── api/
+│   ├── food/estimate.js        # Gemini nutrition estimation
+│   └── health.js               # Vercel configuration check
+├── src/
+│   ├── data/                   # Default profile, meals and workouts
+│   ├── App.jsx
+│   ├── SimpleHomeManagerV4.jsx
+│   ├── aiFoodClient.js
+│   ├── CalorieOffsetCoach.jsx
+│   ├── routineUploadEnhancer.js
+│   └── main.jsx
+├── .env.example
+├── vercel.json
+├── vite.config.js
+└── package.json
 ```
 
 ---
@@ -153,17 +277,16 @@ Browser
 
 ### Next
 
+- [ ] Let users edit Gemini’s serving and macros before confirmation
 - [ ] Weekly calorie budget and deviation tracking
 - [ ] Multiple correction choices: food, steps, mixed or no action
-- [ ] Confidence ranges for uncertain meals
-- [ ] Edit and confirm database matches before saving
 - [ ] Daily reset and historical food log
 - [ ] Export/import user data
 - [ ] Improved Australian product and restaurant coverage
 
 ### Later
 
-- [ ] Secure backend and authentication
+- [ ] Authentication and cloud sync
 - [ ] Personal maintenance-calorie learning from weight trends
 - [ ] Apple Health and Android Health Connect integration
 - [ ] Voice food logging
@@ -171,89 +294,6 @@ Browser
 - [ ] Halal and South Asian food knowledge base
 - [ ] Ramadan mode
 - [ ] Coach or dietitian review workflow
-- [ ] Recommendation learning based on user preferences
-
----
-
-## Technology
-
-| Area | Technology |
-|---|---|
-| Frontend | React 18 |
-| Build tooling | Vite 5 |
-| Icons | Lucide React |
-| Styling | Custom responsive CSS |
-| Persistence | Browser `localStorage` |
-| Food data | USDA FoodData Central and Open Food Facts |
-| PDF extraction | PDF.js |
-| Image OCR | Tesseract.js |
-| Hosting | GitHub Pages |
-| Deployment | GitHub Actions |
-
----
-
-## Run locally
-
-### Requirements
-
-- Node.js 20 or newer
-- npm
-
-### Installation
-
-```bash
-git clone https://github.com/abdullahak07/HealthApp.git
-cd HealthApp
-npm install
-npm run dev
-```
-
-Vite will print the local development URL in the terminal.
-
-### Production verification
-
-```bash
-npm run check
-```
-
-`npm run check` builds the production application and exits with an error if compilation fails.
-
-### Preview the production build
-
-```bash
-npm run build
-npm run preview
-```
-
----
-
-## Deployment
-
-Every push to `main` is built and deployed through GitHub Actions to:
-
-**https://abdullahak07.github.io/HealthApp/**
-
-The application uses the Vite base path `/HealthApp/` for GitHub Pages compatibility.
-
----
-
-## Project structure
-
-```text
-HealthApp/
-├── .github/workflows/       # GitHub Pages deployment
-├── src/
-│   ├── data/                # Default profile, meals and workout plan
-│   ├── App.jsx              # Main application views
-│   ├── SimpleHomeManagerV3.jsx
-│   ├── CalorieOffsetCoach.jsx
-│   ├── routineUploadEnhancer.js
-│   ├── styles.css
-│   └── main.jsx
-├── index.html
-├── package.json
-└── vite.config.js
-```
 
 ---
 
@@ -261,7 +301,7 @@ HealthApp/
 
 HealthAI is a wellness and planning tool, not a medical device.
 
-Food calories vary by brand, portion, ingredients and cooking method. Exercise expenditure varies by body composition, pace, fitness, terrain, equipment and physiology. Database matches and MET-based activity calculations are estimates and must not be presented as exact measurements.
+Food calories vary by brand, portion, ingredients and cooking method. AI estimates can be wrong. Exercise expenditure varies by body composition, pace, fitness, terrain and physiology. Always review the serving, confidence and assumptions before saving an estimate.
 
 Stop exercise and seek appropriate medical advice for chest pain, severe breathlessness, fainting, neurological symptoms, significant injury or worsening pain.
 
