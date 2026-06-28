@@ -1,7 +1,10 @@
-const configuredUrl = String(import.meta.env.VITE_AI_API_URL || "").trim().replace(/\/+$/, "");
+const explicitApiUrl = String(import.meta.env.VITE_AI_API_URL || "").trim().replace(/\/+$/, "");
+const browserOrigin = typeof window !== "undefined" ? window.location.origin : "";
+const isGitHubPages = typeof window !== "undefined" && window.location.hostname.endsWith("github.io");
+const apiBaseUrl = explicitApiUrl || (!isGitHubPages ? browserOrigin : "");
 
 export function isGeminiFoodEnabled() {
-  return Boolean(configuredUrl);
+  return Boolean(apiBaseUrl);
 }
 
 function cleanResult(result, originalText) {
@@ -73,13 +76,13 @@ export async function estimateFoodWithAI(text, profile = {}) {
   const barcode = value.match(/^\d{8,14}$/)?.[0];
   if (barcode) return lookupBarcode(barcode);
 
-  if (!configuredUrl) {
-    const error = new Error("Gemini is ready in the code but the secure backend URL has not been connected yet.");
+  if (!apiBaseUrl) {
+    const error = new Error("Open the Vercel deployment to use Gemini food estimation.");
     error.code = "AI_NOT_CONFIGURED";
     throw error;
   }
 
-  const response = await fetch(`${configuredUrl}/api/food/estimate`, {
+  const response = await fetch(`${apiBaseUrl}/api/food/estimate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -93,7 +96,7 @@ export async function estimateFoodWithAI(text, profile = {}) {
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload.error || "Gemini could not estimate this food.");
+    throw new Error(payload.error || payload.detail || "Gemini could not estimate this food.");
   }
 
   return cleanResult(payload, value);
