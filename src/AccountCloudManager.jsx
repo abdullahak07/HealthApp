@@ -25,6 +25,18 @@ const STORAGE_KEY = "healthai-mvp-v1";
 const OWNER_KEY = "healthai-cloud-owner";
 const SYNCED_AT_KEY = "healthai-cloud-synced-at";
 const HYDRATED_KEY_PREFIX = "healthai-cloud-hydrated";
+const CLOUD_TIMEOUT_MS = 9000;
+
+function withTimeout(promise, message, ms = CLOUD_TIMEOUT_MS) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = window.setTimeout(() => reject(new Error(message)), ms);
+  });
+
+  return Promise.race([Promise.resolve(promise), timeout]).finally(() => {
+    window.clearTimeout(timer);
+  });
+}
 
 function readLocalState() {
   try {
@@ -53,14 +65,18 @@ function AuthScreen({ supabase, onSession }) {
 
     try {
       if (mode === "signup") {
-        const { data, error: signUpError } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: {
-            data: { full_name: name.trim() },
-            emailRedirectTo: window.location.origin,
-          },
-        });
+        const { data, error: signUpError } = await withTimeout(
+          supabase.auth.signUp({
+            email: email.trim(),
+            password,
+            options: {
+              data: { full_name: name.trim() },
+              emailRedirectTo: window.location.origin,
+            },
+          }),
+          "Cloud sign-up timed out. Please check your connection and try again.",
+          12000,
+        );
         if (signUpError) throw signUpError;
 
         if (data.session) {
@@ -70,10 +86,14 @@ function AuthScreen({ supabase, onSession }) {
           setMode("signin");
         }
       } else {
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
+        const { data, error: signInError } = await withTimeout(
+          supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password,
+          }),
+          "Cloud sign-in timed out. Please check your connection and try again.",
+          12000,
+        );
         if (signInError) throw signInError;
         onSession(data.session);
       }
@@ -140,14 +160,19 @@ function AuthScreen({ supabase, onSession }) {
   );
 }
 
-function SetupRequired({ children }) {
+function SetupRequired({ children, message }) {
   const status = getSupabaseConfigStatus();
+  const setupMessage = `Add ${status.hasUrl ? "" : "VITE_SUPABASE_URL"}${!status.hasUrl && !status.hasPublishableKey ? " and " : ""}${status.hasPublishableKey ? "" : "VITE_SUPABASE_PUBLISHABLE_KEY"} in Vercel to activate cloud accounts.`;
+
   return (
     <>
       {children}
       <div className="cloud-setup-banner">
         <CloudOff size={18} />
-        <div><strong>Cloud accounts are ready in the code</strong><span>Add {status.hasUrl ? "" : "VITE_SUPABASE_URL"}{!status.hasUrl && !status.hasPublishableKey ? " and " : ""}{status.hasPublishableKey ? "" : "VITE_SUPABASE_PUBLISHABLE_KEY"} in Vercel to activate them.</span></div>
+        <div>
+          <strong>{message ? "Cloud sync unavailable — running locally" : "Cloud accounts are ready in the code"}</strong>
+          <span>{message || setupMessage}</span>
+        </div>
       </div>
     </>
   );
@@ -194,6 +219,7 @@ export default function AccountCloudManager({ children }) {
   const [supabase, setSupabase] = useState(null);
   const [session, setSession] = useState(null);
   const [initialising, setInitialising] = useState(configured);
+  const [startupError, setStartupError] = useState("");
   const [hydrating, setHydrating] = useState(false);
   const [syncStatus, setSyncStatus] = useState("saved");
   const [portalTarget, setPortalTarget] = useState(null);
@@ -206,25 +232,40 @@ export default function AccountCloudManager({ children }) {
     let mounted = true;
     let subscription;
 
-    getSupabase().then(async (client) => {
-      if (!mounted) return;
-      setSupabase(client);
-      const { data } = await client.auth.getSession();
-      if (!mounted) return;
-      setSession(data.session || null);
-      setInitialising(false);
+    const initialiseCloud = async () => {
+      try {
+        const client = await withTimeout(
+          getSupabase(),
+          "The cloud client did not load in time.",
+        );
+        if (!mounted) return;
+        setSupabase(client);
 
-      const authListener = client.auth.onAuthStateChange((_event, nextSession) => {
-        if (mounted) setSession(nextSession || null);
-      });
-      subscription = authListener.data.subscription;
-    }).catch((error) => {
-      console.error("Supabase startup failed", error);
-      if (mounted) {
+        const { data } = await withTimeout(
+          client.auth.getSession(),
+          "The cloud session check timed out.",
+        );
+        if (!mounted) return;
+
+        setSession(data.session || null);
         setInitialising(false);
-        setSyncStatus("error");
+        setStartupError("");
+
+        const authListener = client.auth.onAuthStateChange((_event, nextSession) => {
+          if (mounted) setSession(nextSession || null);
+        });
+        subscription = authListener.data.subscription;
+      } catch (error) {
+        console.error("Supabase startup failed", error);
+        if (mounted) {
+          setInitialising(false);
+          setStartupError(error?.message || "Cloud connection failed.");
+          setSyncStatus("error");
+        }
       }
-    });
+    };
+
+    initialiseCloud();
 
     return () => {
       mounted = false;
@@ -248,15 +289,30 @@ export default function AccountCloudManager({ children }) {
       const localState = readLocalState();
       const hydrationKey = `${HYDRATED_KEY_PREFIX}:${userId}`;
 
-      const { data, error } = await supabase
-        .from("user_app_state")
-        .select("state, updated_at")
-        .eq("user_id", userId)
-        .maybeSingle();
+      let cloudResult;
+      try {
+        cloudResult = await withTimeout(
+          supabase
+            .from("user_app_state")
+            .select("state, updated_at")
+            .eq("user_id", userId)
+            .maybeSingle(),
+          "Loading your cloud plan timed out.",
+        );
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Cloud state load failed", error);
+        readyUserRef.current = userId;
+        setSyncStatus("error");
+        setHydrating(false);
+        return;
+      }
 
+      const { data, error } = cloudResult;
       if (cancelled) return;
       if (error) {
         console.error("Cloud state load failed", error);
+        readyUserRef.current = userId;
         setSyncStatus("error");
         setHydrating(false);
         return;
@@ -283,13 +339,19 @@ export default function AccountCloudManager({ children }) {
         }
 
         if (localState) {
-          const { error: insertError } = await supabase.from("user_app_state").upsert({
-            user_id: userId,
-            state: localState,
-            updated_at: new Date().toISOString(),
-          });
-          if (insertError) {
+          try {
+            const { error: insertError } = await withTimeout(
+              supabase.from("user_app_state").upsert({
+                user_id: userId,
+                state: localState,
+                updated_at: new Date().toISOString(),
+              }),
+              "Creating your cloud plan timed out.",
+            );
+            if (insertError) throw insertError;
+          } catch (insertError) {
             console.error("Initial cloud state creation failed", insertError);
+            readyUserRef.current = userId;
             setSyncStatus("error");
             setHydrating(false);
             return;
@@ -316,13 +378,18 @@ export default function AccountCloudManager({ children }) {
 
     setSyncStatus("saving");
     const now = new Date().toISOString();
-    const { error } = await supabase.from("user_app_state").upsert({
-      user_id: session.user.id,
-      state,
-      updated_at: now,
-    });
 
-    if (error) {
+    try {
+      const { error } = await withTimeout(
+        supabase.from("user_app_state").upsert({
+          user_id: session.user.id,
+          state,
+          updated_at: now,
+        }),
+        "Cloud save timed out.",
+      );
+      if (error) throw error;
+    } catch (error) {
       console.error("Cloud save failed", error);
       setSyncStatus("error");
       return;
@@ -360,15 +427,31 @@ export default function AccountCloudManager({ children }) {
   }, [session?.user?.id]);
 
   const signOut = async () => {
-    await saveToCloud();
-    await supabase.auth.signOut();
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(OWNER_KEY);
-    localStorage.removeItem(SYNCED_AT_KEY);
-    window.location.reload();
+    try {
+      await saveToCloud();
+      await withTimeout(supabase.auth.signOut(), "Cloud sign-out timed out.");
+    } catch (error) {
+      console.error("Cloud sign-out failed", error);
+    } finally {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(OWNER_KEY);
+      localStorage.removeItem(SYNCED_AT_KEY);
+      window.location.reload();
+    }
   };
 
   if (!configured) return <SetupRequired>{children}</SetupRequired>;
+
+  // Critical fail-safe: cloud account infrastructure must never make the health
+  // application unusable. If startup fails or times out, continue in local mode.
+  if (startupError) {
+    return (
+      <SetupRequired message="The cloud account service could not be reached. HealthAI is fully available on this device and will keep your data locally. Refresh later to retry cloud sync.">
+        {children}
+      </SetupRequired>
+    );
+  }
+
   if (initialising || !supabase) return <SyncLoading message="Connecting your account" />;
   if (!session) return <AuthScreen supabase={supabase} onSession={setSession} />;
   if (hydrating) return <SyncLoading message="Loading your saved plan" />;
